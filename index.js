@@ -1,10 +1,10 @@
 const { MongoClient } = require('mongodb');
 const express = require('express')
-const app = express()
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
+const app = express()
 app.use(express.json({limit: '64mb'}));
 
 /*
@@ -16,13 +16,25 @@ app.post('/signup', (req, res) => {
     const salt = crypto.randomBytes(64).toString('hex')
     const hash = crypto.createHmac('sha512', salt).update(password).digest('hex')
 
-    req.app.locals.db.collection('users').insertOne({ username, salt, hash }, (err, result) => {
+    req.app.locals.db.collection('users').findOne({ username: username }, (err, fullUser) => {
         if (err) {
             res.status(500)
-            res.json({message: err})
+            res.json({ message: err })
+        }
+        else if (fullUser) {
+            res.status(400)
+            res.json({ message: 'a user already exists with that name' })
         }
         else {
-            res.json(result)
+            req.app.locals.db.collection('users').insertOne({ username, salt, hash }, (err, result) => {
+                if (err) {
+                    res.status(500)
+                    res.json({ message: err })
+                }
+                else {
+                    res.json(result)
+                }
+            })
         }
     })
 })
