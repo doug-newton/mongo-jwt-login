@@ -45,7 +45,7 @@ app.post('/login', (req, res) => {
         if (hash === fullUser.hash) {
             res.status(201)
             const signedUser = {username: fullUser.username}
-            jwt.sign(signedUser, process.env.SECRET, (err, token) => {
+            jwt.sign(signedUser, process.env.SECRET, {expiresIn: process.env.EXPIRES_IN}, (err, token) => {
                 if (err) {
                     res.sendStatus(403)
                 } else {
