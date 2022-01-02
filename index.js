@@ -7,6 +7,10 @@ require('dotenv').config()
 
 app.use(express.json({limit: '64mb'}));
 
+/*
+    creates user with salt and hash
+*/
+
 app.post('/signup', (req, res) => {
     const { username, password } = req.body
     const salt = crypto.randomBytes(64).toString('hex')
@@ -22,6 +26,12 @@ app.post('/signup', (req, res) => {
         }
     })
 })
+
+/*
+    hashes password using user's salt
+    compares hash against db
+    sends back token if successful
+*/
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body
@@ -49,6 +59,38 @@ app.post('/login', (req, res) => {
             res.json({message: 'invalid credentials'})
         }
     })
+})
+
+/*
+    jwt authentication middleware
+    expects header `Authorization: Bearer <token>`
+*/
+
+function auth(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1]
+    if (token) {
+        req.token = token
+        jwt.verify(req.token, process.env.SECRET, (err, signedUser) => {
+            if (err) {
+                res.sendStatus(403)
+            } else {
+                res.locals.user = signedUser
+                next()
+            }
+        })
+    } else {
+        res.sendStatus(403)
+    }
+}
+
+/*
+    protected route using data from verified token
+*/
+
+app.get('/data', auth, (req, res) => {
+    const user = res.locals.user
+    console.log(user)
+    res.send({message: 'hello ' + user.username})
 })
 
 function gracefulShutdown() {
