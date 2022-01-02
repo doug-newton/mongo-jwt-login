@@ -2,6 +2,7 @@ const { MongoClient } = require('mongodb');
 const express = require('express')
 const app = express()
 const crypto = require('crypto')
+const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
 app.use(express.json({limit: '64mb'}));
@@ -25,15 +26,23 @@ app.post('/signup', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password } = req.body
 
-    req.app.locals.db.collection('users').findOne({ username: username }, (err, user) => {
+    req.app.locals.db.collection('users').findOne({ username: username }, (err, fullUser) => {
         if (err) {
             res.status(500)
             res.json({message: err})
         }
-        const hash = crypto.createHmac('sha512', user.salt).update(password).digest('hex')
-        if (hash === user.hash) {
+        const hash = crypto.createHmac('sha512', fullUser.salt).update(password).digest('hex')
+        if (hash === fullUser.hash) {
             res.status(201)
-            res.json({message: 'login successful'})
+            const signedUser = {username: fullUser.username}
+            jwt.sign(signedUser, process.env.SECRET, (err, token) => {
+                if (err) {
+                    res.sendStatus(403)
+                } else {
+                    res.status(201)
+                    res.json({token})
+                }
+            })
         }
         else {
             res.status(403)
