@@ -2,6 +2,24 @@
 
 A simple project using MongoDB and jsonwebtoken for authentication.
 
+## Setup
+
+This project requires a `.env` file with the following properties:
+
+```
+MONGO_URI
+DB_NAME
+PORT
+SECRET
+EXPIRES_IN // e.g. '15m' or '4d'
+```
+
+You can generate a new `SECRET` by starting node in the console, then running:
+
+```
+require('crypto').randomBytes(64).toString('hex')
+```
+
 ## Usage
 
 ```
