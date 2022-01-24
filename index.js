@@ -16,20 +16,20 @@ app.post('/signup', (req, res) => {
     const salt = crypto.randomBytes(64).toString('hex')
     const hash = crypto.createHmac('sha512', salt).update(password).digest('hex')
 
-    req.app.locals.db.collection('users').findOne({ username: username }, (err, fullUser) => {
-        if (err) {
+    req.app.locals.db.collection('users').findOne({ username: username }, (error, fullUser) => {
+        if (error) {
             res.status(500)
-            res.json({ message: err })
+            res.json({ error })
         }
         else if (fullUser) {
             res.status(400)
-            res.json({ message: 'a user already exists with that name' })
+            res.json({ error: 'USER_EXISTS' })
         }
         else {
-            req.app.locals.db.collection('users').insertOne({ username, salt, hash }, (err, result) => {
-                if (err) {
+            req.app.locals.db.collection('users').insertOne({ username, salt, hash }, (error, result) => {
+                if (error) {
                     res.status(500)
-                    res.json({ message: err })
+                    res.json({ error })
                 }
                 else {
                     res.json(result)
@@ -48,18 +48,19 @@ app.post('/signup', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password } = req.body
 
-    req.app.locals.db.collection('users').findOne({ username: username }, (err, fullUser) => {
-        if (err) {
+    req.app.locals.db.collection('users').findOne({ username: username }, (error, fullUser) => {
+        if (error) {
             res.status(500)
-            res.json({message: err})
+            res.json({ error })
         }
         const hash = crypto.createHmac('sha512', fullUser.salt).update(password).digest('hex')
         if (hash === fullUser.hash) {
             res.status(201)
             const signedUser = {username: fullUser.username}
-            jwt.sign(signedUser, process.env.SECRET, {expiresIn: process.env.EXPIRES_IN}, (err, token) => {
-                if (err) {
-                    res.sendStatus(403)
+            jwt.sign(signedUser, process.env.SECRET, {expiresIn: process.env.EXPIRES_IN}, (error, token) => {
+                if (error) {
+                    res.status(403)
+                    res.json({error})
                 } else {
                     res.status(201)
                     res.json({token})
@@ -68,7 +69,7 @@ app.post('/login', (req, res) => {
         }
         else {
             res.status(403)
-            res.json({message: 'invalid credentials'})
+            res.json({error: 'INVALID_CREDENTIALS'})
         }
     })
 })
